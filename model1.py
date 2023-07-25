@@ -8,8 +8,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import scipy.stats as spst
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-ingr = pd.read_csv("data/pp_ingr.csv", index_col=0)
-ingr = ingr.rename(columns={'id':'recipe_id'})
 interactions_train = pd.read_csv("data/interactions_train_mm.csv")
 interactions_test = pd.read_csv("data/interactions_test_mm.csv")
 
@@ -39,31 +37,46 @@ sim = cosine_similarity(M_norm)
 # pred_matrix = scsp.csr_matrix(np.empty(shape=(0, num_recipes)))
 
 
-pred = []
+# pred = []
+
+eval_df = interactions_test[['u', 'i', 'rating']]
+eval_df.loc[:, 'pred_rating'] = np.nan
+# pred = scsp.lil_matrix((5, num_recipes))
 
 for u in interactions_test['u'].unique():
-    # if u < 3:
-        # print(u)
         # get similarities for that user and delete their similarity with themself
         simt = sim[u,:]
         simt = np.delete(simt, u)
         # get top 50 most similar users 
         most_similar_users = np.argpartition(simt, -50)[-50:]
         # get the ratings for those most similar users 
-        similar_user_ratings = M[most_similar_users]
+        similar_user_ratings = M_norm[most_similar_users]
         # calculate weighted score for each recipe (score times similarity)
         score = scsp.csc_matrix(similar_user_ratings.multiply(simt[most_similar_users].reshape(-1,1)) )
         # calculate average score for each recipe
         row_idx = score.nonzero()[0]
         col_idx = score.nonzero()[1]
-        col_totals = score.sum(axis=0)[:, col_idx]
-        col_counts = [len(col_idx[np.where(col_idx == c)]) for c in col_idx]
+
+        col_totals = score.sum(axis=0)
+        col_counts = np.diff(score.indptr).astype(float)
+        col_counts[np.where(col_counts == 0)] = np.NAN
+
+
+        # col_totals = score.sum(axis=0)[:, col_idx]
+        # col_counts = [len(col_idx[np.where(col_idx == c)]) for c in col_idx]
         score_average = np.array(col_totals / col_counts)[0]
         # Add in user average and subtract 1 because of adding it when making the matrix
-        score_prediction = score_average + np.max(user_average[u]) - 2
+        score_prediction = score_average + np.max(user_average[u]) - 1
+        eval_df.loc[eval_df['u']==u, 'pred_rating'] = score_prediction[eval_df[eval_df['u'] == u]['i']]
 
-        for (u, i, rat) in zip([u] * len(col_idx), col_idx, score_prediction):
-            pred.append((u, i, rat))
+
+
+
+        # pred[(u, [i for i in range(num_recipes)])] = score_prediction
+        # score_prediction = scsp.csr_matrix((score_prediction, (u, [i for i in range(num_recipes)])))
+
+        # for (u, i, rat) in zip([u] * num_recipes, [i for i in range(num_recipes)], score_prediction):
+        #     pred.append((u, i, rat))
         # change type to sparse matrix
         # score_prediction = scsp.csr_matrix((score_prediction, (([0] * len(col_idx)), col_idx)), shape=(1, num_recipes))
         # add to prediction matrix
