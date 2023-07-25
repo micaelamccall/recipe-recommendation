@@ -33,17 +33,12 @@ M_norm = M - user_average
 sim = cosine_similarity(M_norm)
 
 
-# 
-# pred_matrix = scsp.csr_matrix(np.empty(shape=(0, num_recipes)))
-
-
-# pred = []
-
 eval_df = interactions_test[['u', 'i', 'rating']]
-eval_df.loc[:, 'pred_rating'] = np.nan
-# pred = scsp.lil_matrix((5, num_recipes))
+eval_df.loc[:, 'rating_pred'] = np.nan
 
 for u in interactions_test['u'].unique():
+    # if u < 50:
+    #     print(u)
         # get similarities for that user and delete their similarity with themself
         simt = sim[u,:]
         simt = np.delete(simt, u)
@@ -54,39 +49,22 @@ for u in interactions_test['u'].unique():
         # calculate weighted score for each recipe (score times similarity)
         score = scsp.csc_matrix(similar_user_ratings.multiply(simt[most_similar_users].reshape(-1,1)) )
         # calculate average score for each recipe
-        row_idx = score.nonzero()[0]
-        col_idx = score.nonzero()[1]
 
         col_totals = score.sum(axis=0)
         col_counts = np.diff(score.indptr).astype(float)
         col_counts[np.where(col_counts == 0)] = np.NAN
-
-
+        # col_idx = score.nonzero()[1]
         # col_totals = score.sum(axis=0)[:, col_idx]
         # col_counts = [len(col_idx[np.where(col_idx == c)]) for c in col_idx]
         score_average = np.array(col_totals / col_counts)[0]
+
         # Add in user average and subtract 1 because of adding it when making the matrix
         score_prediction = score_average + np.max(user_average[u]) - 1
-        eval_df.loc[eval_df['u']==u, 'pred_rating'] = score_prediction[eval_df[eval_df['u'] == u]['i']]
+        eval_df.loc[eval_df['u']==u, 'rating_pred'] = score_prediction[eval_df[eval_df['u'] == u]['i']]
 
 
 
-
-        # pred[(u, [i for i in range(num_recipes)])] = score_prediction
-        # score_prediction = scsp.csr_matrix((score_prediction, (u, [i for i in range(num_recipes)])))
-
-        # for (u, i, rat) in zip([u] * num_recipes, [i for i in range(num_recipes)], score_prediction):
-        #     pred.append((u, i, rat))
-        # change type to sparse matrix
-        # score_prediction = scsp.csr_matrix((score_prediction, (([0] * len(col_idx)), col_idx)), shape=(1, num_recipes))
-        # add to prediction matrix
-        # pred_matrix = scsp.vstack([pred_matrix, score_prediction])
-
-
-pred_df = pd.DataFrame.from_records(pred)
-pred_df.columns = ['u', 'i', 'rating_pred']
-
-eval_df = interactions_test[['u', 'i', 'rating']].merge(pred_df, how='left', on=['i', 'u'])
+# eval_df = interactions_test[['u', 'i', 'rating']].merge(pred_df, how='left', on=['i', 'u'])
 eval_df = eval_df[eval_df['rating_pred'].isna() == False].drop_duplicates()
 
 eval_df.to_csv("results/model_1.csv")
