@@ -43,7 +43,7 @@ interactions_train_deets = interactions_train_deets[interactions_train_deets['de
 interactions_train_deets.to_csv("data/interactions_train_deets.csv")
 interactions_test_w_deets = add_deets_to_recipe(interactions_test, pp_techniques, ingr)
 
-# interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
+interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
 interactions_test_deets = interactions_test_w_deets[['user_id', 'deets', 'rating', 'u']].drop_duplicates().reset_index(drop=True)
 interactions_test_deets = interactions_test_deets.groupby(['user_id', 'deets', 'u']).mean().reset_index()
 interactions_test_deets = interactions_test_deets[interactions_test_deets['deets'].str.len() > 0]
