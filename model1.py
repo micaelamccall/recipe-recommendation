@@ -16,7 +16,7 @@ interactions_test = pd.read_csv("data/interactions_test_mm.csv")
 
 num_users = np.max(interactions_train['u']) + 1
 num_recipes = np.max(interactions_train['i']) + 1
-# create user-movie matrix
+# create user-recipe matrix
 # add 1 to each rating so that all nonzero elements of the sparse matrix represent a rating
 
 M = scsp.csr_matrix((interactions_train['rating']+1, (interactions_train['u'], interactions_train['i'])))
