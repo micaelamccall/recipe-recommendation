@@ -21,7 +21,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 interactions_train_w_deets = pd.read_csv("data/interactions_train_w_deets.csv")[['u', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
 interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv")[['u', 'i', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
 
-interactions_train_deets = interactions_train_w_deets.groupby(['user_id', 'deets', 'u']).mean().reset_index()
+interactions_train_deets = interactions_train_w_deets.groupby(['deets', 'u']).mean().reset_index()
 interactions_train_deets = interactions_train_deets[interactions_train_deets['deets'].str.len() > 0]
 interactions_train_deets.to_csv("data/interactions_train_deets.csv")
 
@@ -38,7 +38,7 @@ pred_df = pred_df.groupby(['u', 'i'])['rating'].mean().reset_index()
 pred_df.columns = ['u', 'i', 'rating_pred']
 
 # Merge back with testing data for evaluation
-eval_df = interactions_test[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
+eval_df = interactions_test_deets[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
