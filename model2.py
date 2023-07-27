@@ -26,7 +26,7 @@ pp_techniques = pp_techniques.rename(columns={'id': 'recipe_id'})
 
 
 def add_deets_to_recipe(interactions, techniques, ingredients):
-    interactions_w_deets = interactions.merge(techniques, how='left', on='recipe_id').merge(ingredients, how='inner', on='recipe_id').drop(columns=['ingredient_ids'])
+    interactions_w_deets = interactions.merge(techniques, how='left', on='recipe_id').merge(ingredients, how='left', on='recipe_id').drop(columns=['ingredient_ids'])
     interactions_w_deets['ingredients'] = interactions_w_deets['ingredients'].apply(literal_eval)
     interactions_w_deets['techniques'] = interactions_w_deets['techniques'].apply(literal_eval)
     interactions_w_deets['flavors'] = interactions_w_deets['flavors'].apply(literal_eval)
@@ -38,9 +38,9 @@ interactions_train_w_deets = add_deets_to_recipe(interactions_train, pp_techniqu
 interactions_train_deets = interactions_train_w_deets[['user_id', 'deets', 'rating', 'u']].drop_duplicates().reset_index(drop=True)
 interactions_train_deets = interactions_train_deets.groupby(['user_id', 'deets', 'u']).mean().reset_index()
 interactions_train_deets = interactions_train_deets[interactions_train_deets['deets'].str.len() > 0]
-
-
 interactions_train_deets.to_csv("data/interactions_train_deets.csv")
+
+
 interactions_test_w_deets = add_deets_to_recipe(interactions_test, pp_techniques, ingr)
 
 interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
