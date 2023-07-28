@@ -73,30 +73,5 @@ print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 
-np.max(user_average[11433])
-interactions_train[interactions_train['u'] == 11433]['rating']
-np.average(interactions_train[interactions_train['u'] == 11433]['rating'])
-# interactions_train[interactions_train['u'] == 22095]
-
-# interactions_test['u'][0]
-# interactions_train['user_id'][interactions_train['u'] == 2]
-# len(interactions_test['user_id'][interactions_test['u'] == 2])
-
-
-# for u in interactions_test['u']:
-#     if len(interactions_train['user_id'][interactions_train['u'] == u]) == 0:
-#         print(u)
-#         # print(interactions_train['user_id'][interactions_train['u'] == u])
-
-# np.any(interactions_test['recipe_id'].isin(interactions_train['recipe_id']))
-
-
-# i = 61982
-# interactions_train[(interactions_train['u'].isin(most_similar_users)) & (interactions_train['i'] == i)]
-
-# M_norm[nz] -= user_average[nz[0]].T
-
-# interactions_train.groupby(["user_id", "u"]).count().reset_index().sort_values(by="u")
-
-# interactions_train.isna().sum()
+sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
