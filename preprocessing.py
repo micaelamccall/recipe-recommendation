@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import pandas as pd
+from ast import literal_eval
 import spacy
 nlp = spacy.load("en_core_web_sm")
 
@@ -217,5 +218,35 @@ interactions_test_new.to_csv("data/interactions_test_mm.csv")
 
 
 
+ingr = pd.read_csv("data/pp_ingr.csv", index_col=0)
+ingr = ingr.rename(columns={'id':'recipe_id'})
+interactions_train = pd.read_csv("data/interactions_train_mm.csv")[['user_id', 'recipe_id', 'rating', 'u', 'i']]
+interactions_test = pd.read_csv("data/interactions_test_mm.csv")[['user_id', 'recipe_id', 'rating', 'u', 'i']]
+pp_recipes = pd.read_csv("data/pp_recipes.csv")
+pp_techniques = pp_recipes[['id', 'techniques']]
+pp_techniques = pp_techniques.rename(columns={'id': 'recipe_id'})
 
 
+def literal_return(val):
+    try:
+        return literal_eval(val)
+    except (ValueError, SyntaxError) as e:
+        return val
+
+def add_deets_to_recipe(interactions, techniques, ingredients):
+    interactions_w_deets = interactions.merge(techniques, how='left', on='recipe_id').merge(ingredients, how='left', on='recipe_id').drop(columns=['ingredient_ids'])
+    interactions_w_deets['ingredients'] = interactions_w_deets['ingredients'].apply(literal_return)
+    interactions_w_deets['techniques'] = interactions_w_deets['techniques'].apply(literal_return)
+    interactions_w_deets['flavors'] = interactions_w_deets['flavors'].apply(literal_return)
+    interactions_w_deets['deets'] = interactions_w_deets['ingredients'] + interactions_w_deets['techniques'] + interactions_w_deets['flavors']
+    interactions_w_deets = interactions_w_deets.explode('deets')
+    return interactions_w_deets
+    
+# Add details to training data
+interactions_train_w_deets = add_deets_to_recipe(interactions_train, pp_techniques, ingr)
+interactions_train_w_deets = interactions_train_w_deets[['user_id', 'deets', 'rating', 'u']].drop_duplicates().reset_index(drop=True)
+interactions_train_w_deets.to_csv("data/interactions_train_w_deets.csv")
+
+interactions_test_w_deets = add_deets_to_recipe(interactions_test, pp_techniques, ingr)
+interactions_test_w_deets = interactions_test_w_deets[['user_id', 'recipe_id', 'deets', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
+interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
