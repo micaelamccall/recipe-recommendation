@@ -3,6 +3,9 @@ import json
 import pandas as pd
 from ast import literal_eval
 import spacy
+import scipy.stats as spst
+import seaborn as sns
+import matplotlib.pyplot as plt
 nlp = spacy.load("en_core_web_sm")
 
 ingr_map = pd.read_pickle("food.com_recipes/ingr_map.pkl")
@@ -177,12 +180,12 @@ interactions_train = pd.read_csv("food.com_recipes/interactions_train.csv")
 interactions_test = pd.read_csv("food.com_recipes/interactions_test.csv")
 
 interactions = pd.concat([interactions_train, interactions_test])
-import seaborn as sns
-import matplotlib.pyplot as plt
+
+
 
 agg = interactions.groupby(["recipe_id", 'i']).agg(mean_rating = ('rating', 'mean'), number_of_ratings = ('rating', 'count'))
 
-agg.to_csv("data/agg.csv")
+# agg.to_csv("data/agg.csv")
 
 def plot_ratings_dist(agg):
     fig = plt.figure(figsize=(12, 5))
@@ -190,11 +193,11 @@ def plot_ratings_dist(agg):
     fig_columns = 2
     fig.add_subplot(fig_rows, fig_columns, 1)
     plt.hist(agg['mean_rating'], bins=10, ec='white', fc='purple')
-    plt.title('Dist of mean rating for movies')
+    plt.title('Dist of mean rating for recipes')
     fig.add_subplot(fig_rows, fig_columns, 2)
     plt.hist(agg['number_of_ratings'], bins=1000, ec='white', fc='purple')
     plt.xlim(0,50)
-    plt.title('Dist of number of ratings for movies')
+    plt.title('Dist of number of ratings for recipes')
     plt.show()
 
 plot_ratings_dist(agg)
@@ -217,7 +220,6 @@ interactions_train_new.to_csv("data/interactions_train_mm.csv")
 interactions_test_new.to_csv("data/interactions_test_mm.csv")
 
 
-
 ingr = pd.read_csv("data/pp_ingr.csv", index_col=0)
 ingr = ingr.rename(columns={'id':'recipe_id'})
 interactions_train = pd.read_csv("data/interactions_train_mm.csv")[['user_id', 'recipe_id', 'rating', 'u', 'i']]
@@ -226,6 +228,8 @@ pp_recipes = pd.read_csv("data/pp_recipes.csv")
 pp_techniques = pp_recipes[['id', 'techniques']]
 pp_techniques = pp_techniques.rename(columns={'id': 'recipe_id'})
 
+interactions_train['rating'] += 1
+interactions_test['rating'] += 1
 
 def literal_return(val):
     try:
@@ -250,3 +254,50 @@ interactions_train_w_deets.to_csv("data/interactions_train_w_deets.csv")
 interactions_test_w_deets = add_deets_to_recipe(interactions_test, pp_techniques, ingr)
 interactions_test_w_deets = interactions_test_w_deets[['user_id', 'recipe_id', 'deets', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
 interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
+
+
+
+
+#### MAKING SMALLER DS #####
+
+
+
+interactions_small = interactions.sample(frac=.5)[['date', 'rating', 'user_id', 'recipe_id']]
+
+user_id_map = interactions_small[['user_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'u'})
+recipe_id_map = interactions_small[['recipe_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'i'})
+
+interactions_small = interactions_small.merge(user_id_map, how='left', on='user_id')
+interactions_small = interactions_small.merge(recipe_id_map, how='left', on='recipe_id')
+
+
+agg = interactions_small.groupby(["recipe_id", 'i']).agg(mean_rating = ('rating', 'mean'), number_of_ratings = ('rating', 'count'))
+
+def plot_ratings_dist(agg):
+    fig = plt.figure(figsize=(12, 5))
+    fig_rows = 1
+    fig_columns = 2
+    fig.add_subplot(fig_rows, fig_columns, 1)
+    plt.hist(agg['mean_rating'], bins=10, ec='white', fc='purple')
+    plt.title('Dist of mean rating for recipes')
+    fig.add_subplot(fig_rows, fig_columns, 2)
+    plt.hist(agg['number_of_ratings'], bins=1000, ec='white', fc='purple')
+    plt.xlim(0,50)
+    plt.title('Dist of number of ratings for recipes')
+    plt.show()
+
+plot_ratings_dist(agg)
+
+
+select_one_of_each = agg[agg['number_of_ratings'] > 10].reset_index()['i']
+
+interactions_small[interactions_small['i'].isin(select_one_of_each)].shape
+
+interactions_test_small_new = pd.DataFrame(columns=interactions.columns)
+
+for id in select_one_of_each:
+    interactions_test_small_new = pd.concat([interactions_test_small_new, interactions_small[interactions_small['i'] == id].sample(n=1)])
+
+interactions_train_small_new = interactions_small.loc[~interactions_small.index.isin(interactions_test_small_new.index)]
+
+interactions_test_small_new = interactions_test_small_new[interactions_test_small_new['u'].isin(interactions_train_small_new['i'])]
