@@ -89,7 +89,7 @@ with open('data/ing_flav_dict.txt', 'w') as f:
     f.write(json.dumps(ing_flav_dict))
 
 
-with open('flav_dict.txt', 'r') as f:
+with open('data/ing_flav_dict.txt', 'r') as f:
     ing_flav_dict = json.load(f)
 
 
@@ -124,7 +124,19 @@ with open('data/flav_dict.txt', 'w') as f:
 pp_ingr = pp_recipes[['id', 'ingredient_ids']]
 pp_ingr['ingredient_ids'] = pp_ingr['ingredient_ids'].apply(json.loads)
 
+from wordcloud import WordCloud
 
+wordcloud = WordCloud(width = 800, height = 800,
+                background_color ='white',
+                min_font_size = 10).generate(" ".join(ing_flav_dict['lettuce']))
+ 
+# plot the WordCloud image                      
+plt.figure(figsize = (16, 8), facecolor = None)
+plt.imshow(wordcloud)
+plt.axis("off")
+plt.tight_layout(pad = 0)
+ 
+plt.show()
 
 def ingr_match_and_filter(ingr_ids):
     try:
@@ -165,7 +177,6 @@ pp_ingr.to_csv("pp_ingr.csv")
 # for l in recipes['tags']:
 #     tags.extend(eval(l))
 # tags = list(set(tags))
-
 
 
 with open("data/techniques.txt", 'r') as f:
@@ -219,6 +230,7 @@ interactions_test_new = interactions_test_new[interactions_test_new['user_id'].i
 interactions_train_new.to_csv("data/interactions_train_mm.csv")
 interactions_test_new.to_csv("data/interactions_test_mm.csv")
 
+######ADDING DEETS ####
 
 ingr = pd.read_csv("data/pp_ingr.csv", index_col=0)
 ingr = ingr.rename(columns={'id':'recipe_id'})
@@ -248,21 +260,56 @@ def add_deets_to_recipe(interactions, techniques, ingredients):
     
 # Add details to training data
 interactions_train_w_deets = add_deets_to_recipe(interactions_train, pp_techniques, ingr)
-interactions_train_w_deets = interactions_train_w_deets[['user_id', 'deets', 'rating', 'u']].drop_duplicates().reset_index(drop=True)
+interactions_train_w_deets = interactions_train_w_deets[['user_id', 'recipe_id', 'deets', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
 interactions_train_w_deets.to_csv("data/interactions_train_w_deets.csv")
 
 interactions_test_w_deets = add_deets_to_recipe(interactions_test, pp_techniques, ingr)
 interactions_test_w_deets = interactions_test_w_deets[['user_id', 'recipe_id', 'deets', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
 interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
 
+###### PLOTS ###########
 
+interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv", index_col=0)
+interactions_test_w_deets[interactions_test_w_deets['i'] == 120]
+
+import networkx as nx
+
+G = nx.from_pandas_edgelist(interactions_test_w_deets[interactions_test_w_deets['i'] == 120][:150], 'i', 'deets')
+nx.draw(G, with_labels=True, pos=nx.spring_layout(G, k=.3), font_size=8, edge_color='lightgray', node_color='lightblue', node_size=0, edgecolors='lightgray')
+plt.show()
+
+v = interactions_test_w_deets.groupby(["i"]).count()
+
+pp_ingr['ingredients'][0]
+
+
+def literal_return(val):
+    try:
+        return literal_eval(val)
+    except (ValueError, SyntaxError) as e:
+        return val
+pp_ingr['flavors'] = pp_ingr['flavors'].apply(literal_return)
+
+flav_explode = pp_ingr.explode('flavors')
+
+flav_explode = flav_explode.groupby("flavors").agg(mentions = ('id', 'count')).reset_index()
+
+
+sns.set_theme(style="whitegrid")
+f, ax = plt.subplots(figsize=(6, 6))
+sns.set_color_codes("pastel")
+sns.barplot(x="mentions", y="flavors", data=flav_explode.sort_values(by='mentions').sample(50),
+            label="Total mentions")
+plt.yticks(fontsize=8)
+# Plot the crashes where alcohol was involved
+sns.set_color_codes("muted")
 
 
 #### MAKING SMALLER DS #####
 
 
 
-interactions_small = interactions.sample(frac=.5)[['date', 'rating', 'user_id', 'recipe_id']]
+interactions_small = interactions.sample(frac=.1)[['date', 'rating', 'user_id', 'recipe_id']]
 
 user_id_map = interactions_small[['user_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'u'})
 recipe_id_map = interactions_small[['recipe_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'i'})
@@ -301,3 +348,6 @@ for id in select_one_of_each:
 interactions_train_small_new = interactions_small.loc[~interactions_small.index.isin(interactions_test_small_new.index)]
 
 interactions_test_small_new = interactions_test_small_new[interactions_test_small_new['u'].isin(interactions_train_small_new['i'])]
+
+interactions_train_small_new.to_csv("data/interactions_train_small_mm.csv")
+interactions_test_small_new.to_csv("data/interactions_test_small_mm.csv")
