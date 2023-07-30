@@ -10,53 +10,33 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 class NMF():
     
     def __init__(self, n_factors=15, n_epochs=50, biased=False, reg_pu=.06,
-                 reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,
-                 init_low=0, init_high=1, random_state=None, verbose=False):
+                 reg_qi=.06, lr=.005, random_state=None):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
-        self.lr_bu = lr_bu
-        self.lr_bi = lr_bi
-        self.reg_bu = reg_bu
-        self.reg_bi = reg_bi
-        self.init_low = init_low
-        self.init_high = init_high
+        self.lr_bu = lr
+        self.lr_bu = lr
         self.random_state = random_state
-        self.verbose = verbose
-
-        if self.init_low < 0:
-            raise ValueError('init_low should be greater than zero')
 
 
     def fit(self, trainset):
 
         self.trainset = trainset
-
-        # AlgoBase.fit(self, trainset)
         self.sgd(trainset)
-
         return self
 
     def sgd(self, trainset):
 
         # user and item factors
-        pu = np.random.uniform(self.init_low, self.init_high, size=(trainset.n_users, self.n_factors))
-        qi = np.random.uniform(self.init_low, self.init_high, size=(trainset.n_items, self.n_factors))
-
-        # user and item biases
-        bu = np.zeros(trainset.n_users, dtype=np.double)
-        bi = np.zeros(trainset.n_items, dtype=np.double)
+        pu = np.random.uniform(0, 1, size=(trainset.n_users, self.n_factors))
+        qi = np.random.uniform(0, 1, size=(trainset.n_items, self.n_factors))
 
         n_factors = self.n_factors
         reg_pu = self.reg_pu
         reg_qi = self.reg_qi
-        reg_bu = self.reg_bu
-        reg_bi = self.reg_bi
-        lr_bu = self.lr_bu
-        lr_bi = self.lr_bi
         global_mean = self.trainset.global_mean
 
         # auxiliary matrices used in optimization process
@@ -88,13 +68,8 @@ class NMF():
                 dot = 0  # <q_i, p_u>
                 for f in range(n_factors):
                     dot += qi[i, f] * pu[u, f]
-                est = global_mean + bu[u] + bi[i] + dot
+                est = global_mean + dot
                 err = r - est
-
-                # update biases
-                if self.biased:
-                    bu[u] += lr_bu * (err - reg_bu * bu[u])
-                    bi[i] += lr_bi * (err - reg_bi * bi[i])
 
                 # compute numerators and denominators
                 for f in range(n_factors):
@@ -119,8 +94,6 @@ class NMF():
                         item_denom[i, f] += n_ratings * reg_qi * qi[i, f]
                         qi[i, f] *= item_num[i, f] / item_denom[i, f]
 
-        self.bu = np.asarray(bu)
-        self.bi = np.asarray(bi)
         self.pu = np.asarray(pu)
         self.qi = np.asarray(qi)
 

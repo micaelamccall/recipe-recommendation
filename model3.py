@@ -1,15 +1,15 @@
-import json
 import pandas as pd
 import scipy.sparse as scsp
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
-import scipy.stats as spst
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 
 interactions_train = pd.read_csv("data/interactions_train_mm.csv")
+
+interactions_train['rating'] += 1
 
 interactions_train_w_deets = pd.read_csv("data/interactions_train_w_deets.csv")[['u', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
 interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv")[['u', 'i', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
@@ -30,7 +30,7 @@ num_deets = deet_id_map['d'].iloc[-1] + 1
 # create user-recipe matrix
 # add 1 to each rating so that all nonzero elements of the sparse matrix represent a rating
 
-M = scsp.csr_matrix((interactions_train['rating']+1, (interactions_train['u'], interactions_train['i'])))
+M = scsp.csr_matrix((interactions_train['rating'], (interactions_train['u'], interactions_train['i'])))
 
 # Calculate user level rating average
 user_average = np.array(M.sum(axis=1) / np.diff(M.indptr).reshape(-1,1))
@@ -43,7 +43,7 @@ M_norm = M - user_average
 # Calculate similarity matrix
 sim = cosine_similarity(M_norm, dense_output=False)
 
-A = scsp.csr_matrix((interactions_train_deets['rating'] + 1, (interactions_train_deets['u'], interactions_train_deets['d'])), shape=(num_users, num_deets))
+A = scsp.csr_matrix((interactions_train_deets['rating'], (interactions_train_deets['u'], interactions_train_deets['d'])), shape=(num_users, num_deets))
 
 eval_df = pd.DataFrame()
 
@@ -69,8 +69,6 @@ for u in interactions_test_w_deets['u'].unique():
         deet_pred = similar_user_deet_ratings.sum(axis=0) / col_counts
         # deet_pred[np.where(deet_pred > 0)] = deet_pred[deet_pred > 0] 
         deet_pred = pd.DataFrame(deet_pred.T).reset_index().rename(columns={'index': 'd', 0: 'deet_rating_pred'})
-        deet_pred['deet_rating_pred'] -= 1
-        # deet_pred['u'] = u
 
         pred_df = interactions_test_w_deets[interactions_test_w_deets['u'] == u]
 
@@ -87,6 +85,8 @@ eval_df = eval_df[eval_df['rating_pred'].isna() == False].drop_duplicates()
 
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
+
+eval_df.to_csv("results/model_3.csv")
 
 # 1.1267288738677808
 # 0.8974235132548416
