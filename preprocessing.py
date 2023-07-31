@@ -307,13 +307,18 @@ sns.set_color_codes("muted")
 
 #### MAKING SMALLER DS #####
 
+interactions['rating'] += 1
 
+interactions_small = pd.DataFrame(columns=interactions.columns)
 
-interactions_small = interactions.sample(frac=.1)[['date', 'rating', 'user_id', 'recipe_id']]
+for r in range(1, 7):
+    interactions_small = pd.concat([interactions_small, interactions[interactions['rating'] == r].sample(n=3500)])
+
+# interactions_small = interactions.sample(frac=.1)[['date', 'rating', 'user_id', 'recipe_id']]
 
 user_id_map = interactions_small[['user_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'u'})
 recipe_id_map = interactions_small[['recipe_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'i'})
-
+interactions_small = interactions_small[['date', 'rating', 'user_id', 'recipe_id']]
 interactions_small = interactions_small.merge(user_id_map, how='left', on='user_id')
 interactions_small = interactions_small.merge(recipe_id_map, how='left', on='recipe_id')
 
@@ -336,7 +341,7 @@ def plot_ratings_dist(agg):
 plot_ratings_dist(agg)
 
 
-select_one_of_each = agg[agg['number_of_ratings'] > 10].reset_index()['i']
+select_one_of_each = agg[agg['number_of_ratings'] > 2].reset_index()['i']
 
 interactions_small[interactions_small['i'].isin(select_one_of_each)].shape
 
