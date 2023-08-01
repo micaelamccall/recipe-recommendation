@@ -16,13 +16,8 @@ num_recipes = np.max(interactions_train['i']) + 1
 R = scsp.csr_matrix((interactions_train['rating'], (interactions_train['u'], interactions_train['i'])))
 
 n_factors = 40
-num_epochs = 200
-lr = 0.1
-
-# Create random initial latent matrices
-U = scsp.csr_matrix(np.random.uniform(-1, 1, size=(num_users, n_factors)))
-V = scsp.csr_matrix(np.random.uniform(-1, 1, size=(num_recipes, n_factors)))
-N = num_users * num_recipes
+num_epochs = 400
+lr = 1.8
 
 class PytorchLinearModel(torch.nn.Module):
     def __init__(self, num_users, num_items, K, lr):
@@ -31,8 +26,11 @@ class PytorchLinearModel(torch.nn.Module):
         self.U = torch.nn.Parameter(torch.zeros((num_users, K)))
         self.V = torch.nn.Parameter(torch.zeros((num_items, K)))
         # Xavier initialization is a great way to intialize parameters
-        torch.nn.init.xavier_uniform_(self.U)
-        torch.nn.init.xavier_uniform_(self.V)
+        # torch.nn.init.xavier_uniform_(self.U)
+        # torch.nn.init.xavier_uniform_(self.V)
+
+        torch.nn.init.uniform_(self.U, 0, 1)
+        torch.nn.init.uniform_(self.V, 0, 1)
         # MSE using Pytorch
         self.MSE = torch.nn.MSELoss()
         # Optimizer for handling the gradient calculation and parameter updates
@@ -53,24 +51,19 @@ class PytorchLinearModel(torch.nn.Module):
 # Create Model -> U and V
 MF_model = PytorchLinearModel(num_users, num_recipes, n_factors, lr)
 
-# row = torch.from_numpy(R.row.astype(np.int64)).to(torch.long)
-# col = torch.from_numpy(R.col.astype(np.int64)).to(torch.long)
-# edge_index = torch.stack([row, col], dim=0)
-# val = torch.from_numpy(R.data.astype(np.float64)).to(torch.float)
-# R_tens = torch.sparse_coo_tensor(edge_index, val, torch.Size(R.shape))
-# R_tens.to_dense()
-
-R_tens = torch.FloatTensor(R.todense(), )
-
-# R_tens = torch.from_numpy(R.todense()).to_sparse()
+R_tens = torch.FloatTensor(R.todense())
 
 # Training
+losses = []
 for curr_epoch in range(num_epochs):
     # Reconstruct R_hat from latent factor matrices
     R_hat = MF_model.forward()
     # Calc MSE loss of this reconstruction
     loss = MF_model.calculate_loss(R_tens, R_hat)
-    print(loss)
+    if curr_epoch % 5 == 0:
+        print(f"Epoch: {curr_epoch}")
+        print(f"Loss: {loss.item()}")
+        losses.append(loss.item())
     # Calc grad and update
     MF_model.optimize(loss)
 
@@ -79,12 +72,19 @@ eval_df = interactions_test[['u', 'i', 'rating']]
 eval_df.loc[:, 'rating_pred'] = np.nan
 
 for (u, i) in zip(interactions_test['u'], interactions_test['i']):
-    pred= MF_model.U[u].dot(MF_model.V[i].T).item()
+    pred= MF_model.U[u].dot(MF_model.V[i]).item()
     eval_df.loc[eval_df['u']==u, 'rating_pred'] = pred
 
 global_mean = np.mean(interactions_train['rating'])
 
 eval_df['rating_pred'] += global_mean
+
+eval_df.loc[eval_df['rating_pred'] > 6, 'rating_pred'] = 6
+eval_df.loc[eval_df['rating_pred'] < 1, 'rating_pred'] = 1
+# 2.314583089980164
+# 2.159911561380502
+
+
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
