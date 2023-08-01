@@ -21,7 +21,7 @@ for r in range(1, 7):
 
 rating_pred = np.random.choice(np.arange(1, 7), len(interactions_test), p=p)
 
-
+rating_pred = np.random.uniform(1, 7, len(interactions_test))
 
 eval_df = interactions_test[['u', 'i', 'rating']]
 eval_df.loc[:, 'rating_pred'] = rating_pred

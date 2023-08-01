@@ -69,7 +69,8 @@ eval_df.to_csv("results/model_1.csv")
 
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
-
+# 0.9805354323601725
+# 0.561698932192435
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
