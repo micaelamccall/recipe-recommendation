@@ -3,6 +3,7 @@ import pandas as pd
 import scipy.sparse as scsp
 import numpy as np
 import seaborn as sns
+import matplotlib.pyplot as plt
 from ast import literal_eval
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
@@ -22,11 +23,14 @@ pred_df.columns = ['u', 'i', 'rating_pred']
 # Merge back with testing data for evaluation
 eval_df = interactions_test_w_deets[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
 eval_df = eval_df.drop_duplicates()
-print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
-print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
-eval_df.to_csv("results/model_2.csv")
+from model_comparisons import calculate_metrics, plot_results
+
+true_total = len(interactions_test_w_deets[['u', 'i']].drop_duplicates())
+
+calculate_metrics(eval_df, true_total, "CB")
+
+eval_df.to_csv("results/CB.csv")
 # 1.398715133501436
 # 1.0337515990485506
-
-sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
+# 0.35352078827204997
