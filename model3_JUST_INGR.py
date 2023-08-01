@@ -8,9 +8,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from ast import literal_eval
 
 
-interactions_train = pd.read_csv("data/interactions_train_mm.csv")
-interactions_train['rating'] += 1
-
 ingr = pd.read_csv("data/pp_ingr.csv", index_col=0)
 ingr = ingr.rename(columns={'id':'recipe_id'})
 interactions_train = pd.read_csv("data/interactions_train_mm.csv")[['user_id', 'recipe_id', 'rating', 'u', 'i']]
@@ -36,14 +33,11 @@ def add_ingr_to_recipe(interactions, ingredients):
 interactions_train_w_deets = add_ingr_to_recipe(interactions_train, ingr)
 interactions_train_w_deets = interactions_train_w_deets[['user_id', 'recipe_id', 'ingredients', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
 
-
+# Add details to testing data
 interactions_test_w_deets = add_ingr_to_recipe(interactions_test, ingr)
 interactions_test_w_deets = interactions_test_w_deets[['user_id', 'recipe_id', 'ingredients', 'rating', 'u', 'i']].drop_duplicates().reset_index(drop=True)
 
-
-
 ingredients = pd.concat([interactions_train_w_deets['ingredients'], interactions_test_w_deets['ingredients']]).drop_duplicates().reset_index(drop=True)
-
 ingredients_id_map = pd.DataFrame(ingredients).reset_index().rename(columns={'index':'d'})
 
 interactions_train_w_deets = interactions_train_w_deets.merge(ingredients_id_map, how='left', on='ingredients')

@@ -56,11 +56,6 @@ for u in interactions_test_w_deets['u'].unique():
         # get top 50 most similar users 
         most_similar_users = np.argpartition(simt, -10)[-10:]
         # get the ratings for those most similar users 
-        # similar_user_ratings = scsp.csr_matrix(M_norm[most_similar_users])
-        # rated_recipes = np.unique(similar_user_ratings.nonzero()[1])
-        # similar_user_deet_ratings = interactions_train_deets[
-        #     interactions_train_deets['u'].isin(most_similar_users)]
-        # similar_user_deet_ratings = scsp.csr_matrix(A[most_similar_users])
         similar_user_deet_ratings = scsp.csc_matrix(A[most_similar_users])
         
         # deet_score = scsp.csc_matrix(similar_user_deet_ratings.multiply(simt[most_similar_users].reshape(-1,1)) )
@@ -88,7 +83,7 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 eval_df.to_csv("results/model_3.csv")
 
-# 1.1267288738677808
-# 0.8974235132548416
+# 1.1038892367996913
+# 0.827530191707642
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
