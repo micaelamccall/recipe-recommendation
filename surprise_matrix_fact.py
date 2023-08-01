@@ -37,6 +37,15 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
 
+algo = NMF(n_factors=40, biased=True, n_epochs=10)
+algo.fit(traindata)
 
+predictions = algo.test(testdata)
+# accuracy.rmse(predictions, verbose=True)
 
+eval_df = pd.DataFrame.from_records([{'u': pred.uid, 'i': pred.iid, 'rating': pred.r_ui, 'rating_pred': pred.est} for pred in predictions])
 
+print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
+print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
+
+sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
