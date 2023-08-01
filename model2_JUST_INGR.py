@@ -53,4 +53,5 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 # 1.0146114345223411
 # 0.5379449783796681
 
+eval_df.to_csv("results/model_2.csv")
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')

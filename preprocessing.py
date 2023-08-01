@@ -314,7 +314,7 @@ interactions_small = pd.DataFrame(columns=interactions.columns)
 for r in range(1, 7):
     interactions_small = pd.concat([interactions_small, interactions[interactions['rating'] == r].sample(n=3500)])
 
-# interactions_small = interactions.sample(frac=.1)[['date', 'rating', 'user_id', 'recipe_id']]
+interactions_small = interactions.sample(frac=.1)[['date', 'rating', 'user_id', 'recipe_id']]
 
 user_id_map = interactions_small[['user_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'u'})
 recipe_id_map = interactions_small[['recipe_id']].drop_duplicates().reset_index(drop=True).reset_index().rename(columns={'index':'i'})

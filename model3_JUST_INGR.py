@@ -76,11 +76,6 @@ for u in interactions_test_w_deets['u'].unique():
         # get top 50 most similar users 
         most_similar_users = np.argpartition(simt, -10)[-10:]
         # get the ratings for those most similar users 
-        # similar_user_ratings = scsp.csr_matrix(M_norm[most_similar_users])
-        # rated_recipes = np.unique(similar_user_ratings.nonzero()[1])
-        # similar_user_deet_ratings = interactions_train_deets[
-        #     interactions_train_deets['u'].isin(most_similar_users)]
-        # similar_user_deet_ratings = scsp.csr_matrix(A[most_similar_users])
         similar_user_deet_ratings = scsp.csc_matrix(A[most_similar_users])
         
         # deet_score = scsp.csc_matrix(similar_user_deet_ratings.multiply(simt[most_similar_users].reshape(-1,1)) )

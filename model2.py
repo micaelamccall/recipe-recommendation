@@ -12,27 +12,21 @@ interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv")[['
 
 interactions_train_deets = interactions_train_w_deets.groupby(['deets', 'u']).mean().reset_index()
 interactions_train_deets = interactions_train_deets[interactions_train_deets['deets'].str.len() > 0]
-interactions_train_deets.to_csv("data/interactions_train_deets.csv")
-
-# Add details to testing data
-interactions_test_deets = interactions_test_w_deets.groupby(['deets', 'u']).mean().reset_index()
-interactions_test_deets = interactions_test_deets[interactions_test_deets['deets'].str.len() > 0]
-interactions_test_deets.to_csv("data/interactions_test_deets.csv")
 
 # Merge training ratings of details with testing true ratings of recipes
-pred_df = interactions_test_w_deets[['u', 'i', 'deets']].merge(interactions_train_w_deets[['u', 'deets', 'rating']], on=['u', 'deets'])
+pred_df = interactions_test_w_deets[['u', 'i', 'deets']].merge(interactions_train_deets[['u', 'deets', 'rating']], on=['u', 'deets'])
 # Group on recipes to get average of detail ratings as predicted recipe rating
 pred_df = pred_df.groupby(['u', 'i'])['rating'].mean().reset_index()
 pred_df.columns = ['u', 'i', 'rating_pred']
 
 # Merge back with testing data for evaluation
-eval_df = interactions_test_deets[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
+eval_df = interactions_test_w_deets[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
 eval_df = eval_df.drop_duplicates()
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 eval_df.to_csv("results/model_2.csv")
-# 1.5794548509981838
-# 1.3070318485870909
+# 1.398715133501436
+# 1.0337515990485506
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
