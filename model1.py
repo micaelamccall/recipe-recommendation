@@ -65,7 +65,7 @@ for u in interactions_test['u'].unique():
 # eval_df = interactions_test[['u', 'i', 'rating']].merge(pred_df, how='left', on=['i', 'u'])
 eval_df = eval_df[eval_df['rating_pred'].isna() == False].drop_duplicates()
 
-eval_df.to_csv("results/model_1.csv")
+eval_df.to_csv("results/CF.csv")
 
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
@@ -74,23 +74,23 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
-from surprise import KNNWithMeans
-from surprise import BaselineOnly, Dataset, Reader, accuracy
+# from surprise import KNNWithMeans
+# from surprise import BaselineOnly, Dataset, Reader, accuracy
 
-reader = Reader(rating_scale=(1, 6))
+# reader = Reader(rating_scale=(1, 6))
 
-traindata = Dataset.load_from_df(interactions_train[["u", "i", "rating"]], reader)
-traindata = traindata.build_full_trainset()
+# traindata = Dataset.load_from_df(interactions_train[["u", "i", "rating"]], reader)
+# traindata = traindata.build_full_trainset()
 
 
-testdata = Dataset.load_from_df(interactions_test[["u", "i", "rating"]], reader)
-testdata = testdata.build_full_trainset().build_testset()
+# testdata = Dataset.load_from_df(interactions_test[["u", "i", "rating"]], reader)
+# testdata = testdata.build_full_trainset().build_testset()
 
-algo = KNNWithMeans(sim_options={'name':'cosine'})
-algo.fit(traindata)
+# algo = KNNWithMeans(sim_options={'name':'cosine'})
+# algo.fit(traindata)
 
-predictions = algo.test(testdata)
-accuracy.rmse(predictions, verbose=True)
+# predictions = algo.test(testdata)
+# accuracy.rmse(predictions, verbose=True)
 
-predictions = pd.DataFrame.from_records([{'u': pred.uid, 'u': pred.iid, 'rating': pred.r_ui, 'rating_pred': pred.est} for pred in predictions])
-sns.scatterplot(data=predictions, x='rating', y='rating_pred')
+# predictions = pd.DataFrame.from_records([{'u': pred.uid, 'u': pred.iid, 'rating': pred.r_ui, 'rating_pred': pred.est} for pred in predictions])
+# sns.scatterplot(data=predictions, x='rating', y='rating_pred')

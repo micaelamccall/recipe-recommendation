@@ -71,10 +71,10 @@ for u in interactions_test_w_deets['u'].unique():
     # if u < 6:
     #     print(u)
         # get similarities for that user and delete their similarity with themself
-        simt = sim[u,:].toarray()
+        simt = sim[u,:].toarray()[0]
         simt = np.delete(simt, u)
         # get top 50 most similar users 
-        most_similar_users = np.argpartition(simt, -10)[-10:]
+        most_similar_users = np.argpartition(simt, -50)[-50:]
         # get the ratings for those most similar users 
         similar_user_deet_ratings = scsp.csc_matrix(A[most_similar_users])
         
@@ -101,9 +101,9 @@ eval_df = eval_df[eval_df['rating_pred'].isna() == False].drop_duplicates()
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
-eval_df.to_csv("results/model_3.csv")
+eval_df.to_csv("results/CA_CF.csv")
 
-# 1.0405203209105882
-# 0.6841080742850193
+# 1.0012067634537283
+# 0.6901512292252544
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')

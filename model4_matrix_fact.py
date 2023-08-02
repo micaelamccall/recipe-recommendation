@@ -31,8 +31,8 @@ class NMF():
     def sgd(self, trainset):
 
         # user and item factors
-        pu = np.random.uniform(0, 1, size=(trainset.n_users, self.n_factors))
-        qi = np.random.uniform(0, 1, size=(trainset.n_items, self.n_factors))
+        pu = np.random.uniform(0, 0.5, size=(trainset.n_users, self.n_factors))
+        qi = np.random.uniform(0, 0.5, size=(trainset.n_items, self.n_factors))
 
         n_factors = self.n_factors
         reg_pu = self.reg_pu
@@ -45,22 +45,22 @@ class NMF():
         item_num = np.zeros((trainset.n_items, n_factors))
         item_denom = np.zeros((trainset.n_items, n_factors))
 
-
         if not self.biased:
             global_mean = 0
 
+        self.losses = []
+
         for current_epoch in range(self.n_epochs):
 
-            # if self.verbose:
             print("Processing epoch {}".format(current_epoch))
 
-            # (re)initialize nums and denoms to zero
-            # TODO: Use fill or memset??
             user_num[:, :] = 0
             user_denom[:, :] = 0
             item_num[:, :] = 0
             item_denom[:, :] = 0
 
+            epoch_loss = 0
+            l = 0
             # Compute numerators and denominators for users and items factors
             for u, i, r in trainset.all_ratings():
 
@@ -70,7 +70,8 @@ class NMF():
                     dot += qi[i, f] * pu[u, f]
                 est = global_mean + dot
                 err = r - est
-
+                epoch_loss += err**2
+                l += 1
                 # compute numerators and denominators
                 for f in range(n_factors):
                     user_num[u, f] += qi[i, f] * r
@@ -78,6 +79,10 @@ class NMF():
                     item_num[i, f] += pu[u, f] * r
                     item_denom[i, f] += pu[u, f] * est
 
+            print(epoch_loss, l)
+            epoch_loss = epoch_loss / l
+            print(epoch_loss)
+            self.losses.append(epoch_loss)
             # Update user factors
             for u in trainset.all_users():
                 n_ratings = len(trainset.ur[u])
@@ -123,7 +128,7 @@ testdata = Dataset.load_from_df(interactions_test[["u", "i", "rating"]], reader)
 testdata = testdata.build_full_trainset().build_testset()
 
 
-algo = NMF(n_factors=40,reg_pu=0.01, reg_qi=0.01, n_epochs=10)
+algo = NMF(n_factors=40, n_epochs=100)
 algo.fit(traindata)
 
 
@@ -140,6 +145,6 @@ eval_df = eval_df[eval_df['rating_pred'].isna() == False].drop_duplicates()
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
-eval_df.to_csv("results/model_5.csv")
+eval_df.to_csv("results/MF.csv")
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
