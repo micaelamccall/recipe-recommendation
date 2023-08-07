@@ -1,15 +1,9 @@
----
-author:
-- Micaela McCall
-date: July 03 2023
-title: |
-  ISYE 6740 Summer 2023 Project Proposal:
+# Augmented recipe recommendation using flavor profile, ingredients, and cooking technique
 
-  "Augmented recipe recommendation using flavor profile, ingredients,
-  and cooking technique"
----
+*python | matrix algorithms | collaborative filtering | matrix factorization | content-based recommendation | hybrid recommendation*
 
-# Background and Literature Review
+
+## Background and Literature Review
 
 As the amount of information on the internet has ballooned,
 recommendation systems have become increasingly crucial to help users
@@ -69,22 +63,14 @@ didn't find instances where rich recipe-based metadata was included in
 recommender algorithms to try to improve the quality of the
 recommendation, other than in Freyne and Berkovsky (2010).
 
-# Problem Statement
+
+# Project Goals
 
 The aim of this project is to explore and compare the performance of CB,
 CF, and hybrid recommender algorithms in the context of recipe
 recommendation, while leveraging recipe flavor profiles and recipe
 metadata (meal type, cooking technique, cooking time) in the
 recommendation.\
-In contrast with some of the approaches mentioned above, I didn't search
-for access to a data set where recipe ratings for individuals with rich
-person-centered metadata was available. Rather, my goal is to use solely
-recipe-related metadata, and enhance this with a second data source of
-flavor profiles, directly in the implementations of CB, CF, and hybrid
-recommender algorithms.\
-Additionally, in the context of CB recommendations, I want to expand on
-the approach used by Freyne and Berkovsky (2010) to include recipe
-flavor and metadata.
 
 # Data Sources
 
@@ -110,7 +96,14 @@ ingredient (e.g. all types of lettuce become \"lettuce\"). Also made
 available through Kaggle
 (<https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions/discussion/118716?resource=download&select=ingr_map.pkl>).
 
-# Methodology
+# Usage
+
+Project scripts and Jupyter Notebook in the `recipe_recommendation` directory
+
+- `recipe_recommendation.ipynb` is the notebook with all the script
+
+
+<!-- # Methodology
 
 ## Data Preprocessing
 
@@ -139,96 +132,139 @@ Train-test split:
     evaluation, and testing data sets. The interactions data will be the
     source of ground-truth that I will use to evaluate the
     recommendations. All/any recipes could be present in each of the
-    train, eval, and test interactions data sets.
+    train, eval, and test interactions data sets. -->
 
-## Algorithms
+## Recommendation Algorithms
 
+Each of the following algorithms was applied on the recipe interactions
+data.\
 **Baseline model**
 
-First, I plan to build a model that randomly predicts ratings for a
-given user on a given recipe in order to compare the other algorithms
-used to this baseline.\
+First, built a model that randomly predicts ratings for a given user on
+a given recipe by sampling from a uniform distribution.\
 **Collaborative filtering (CF)**
 
-Calculate the nearest neighbors of a new user measured by cosine
-similarity:
-$$Sim(u_i, u_k) := \frac{r_i * r_k}{|r_i|*|r_k|} = \frac{\sum_{j=1}^mr_{ij}r_{kj}}{\sqrt{\sum_{j=1}^mr_{ij}^2\sum_{j=1}^mr_{kj}^2}}$$
+**Nearest neighbors:** calculate the nearest neighbors of a new user
+measured by cosine similarity:
+$$Sim(u_i, u_k) := \frac{r_i * r_k}{||r_i||*||r_k||} = \frac{\sum_{j=1}^mr_{ij}r_{kj}}{\sqrt{\sum_{j=1}^mr_{ij}^2\sum_{j=1}^mr_{kj}^2}}$$
 where $r_i$ and $r_k$ are ratings vectors for users $u_i$ and $u_k$.
 
 Predict a user's rating on a new recipe $r_{ij}$ by weighted average
 with bias avoided by by subtracting each user's average rating
 $\tilde{r_k}$ from their rating of the recipe and adding in the target
 user's average rating $\tilde{r_i}$:
-$$r_{ij} = \tilde{r_i}+\frac{\sum_kSim(u_i, u_k)(r_{kj}-\tilde{r}_k)}{\text{num ratings}}$$\
+$$r_{ij} = \tilde{r_i}+\frac{\sum_kSim(u_i, u_k)(r_{kj}-\tilde{r}_k)}{\text{num ratings}}$$
+
+**Matrix Factorization:** aims to decompose the user's preferences for
+into preferences for a set of latent factors. Matrix factorization can
+be performed using Singular Value Decomposition (SVD):
+$$M = U\Sigma V^T$$ 
+By selecting the top $k$ singular values of matrix
+$\Sigma$, we can reconstruct matrix $M$ with less dimensions but still
+capturing much of the variability of the original matrix \[9\]. The
+concept here, when applied over recipe ratings, would be to find the
+dimensions of latent food preferences so as to avoid having to deal with
+the high dimensionality of individual recipe ratings.
+
+However, when factoring a sparse matrix, it's more efficient to use
+Non-negative Matrix Factorization (NMF), which involves finding $P$ and
+$Q$ such that the reconstructed user-item rating
+$\hat{r}_{ui}= q_i^Tp_u$ is as close as possible to the true ${r}_{ui}$.
+In order to find $P$ and $Q$, the Mean Squared Error is minimized:
+
+$$min_{q,p} \sum_{(u, i) \in TR} (r_{ui} - q_i^Tp_u)^2 + \lambda(||q_i||^2+||p_u||^2)$$
+where $p_u$ is the user vector, the $u$-th row of matrix $P$, and $q_i$
+is the item vector, the $i$-th row of matrix $Q$, and $TR$ is the
+training set \[9\]. I implemented this optimization by hand by
+performing Gradient Decent according to the implementation in Luo et al.
+(2014). On each update of the Gradient Decent, the entries of the $P$
+and $Q$ matrices are updated as below:
+
+$$p_{u,k} \leftarrow p_{u,k}\frac{\sum_{i \in TR}q_{k,i} r_{u,i}}{|I_u|\lambda p_{u,k} + \sum_{i \in TR} \hat r_{u,i}}$$
+
+$$q_{k,i} \leftarrow q_{k,i}\frac{\sum_{i \in TR}p_{u,k} r_{u,i}}{|U_i|\lambda q_{k,i} + \sum_{i \in TR} \hat r_{u,i}}$$
+where $I_u$ is the number of ratings for that user in the item set, and
+$U_i$ is the number of rating for that item in the user set. A
+prediction for a new user-recipe pair is simply the $\hat r_{ui}$ entry
+in the reconstructed $\hat R = PQ^T$ matrix.\
 **Content-based (CB)**
 
 A rating for each user on each ingredient is calculated as the average
 of the ratings each user gave to all recipes including that ingredient:
-$$rat(u_i, ingr_j) = \frac{\sum_{l; ingr_j \in l}r_{il}}{l}$$ where
+$$rat(u_i, ingr_j) = \frac{\sum_{l; ingr_j \in l}r_{il}}{l}$$ 
+where
 $r_{il}$ is the rating user $i$ gave to recipe $l$. This formula is then
 applied over the flavor profile of each recipe, tags, and cooking
 techniques, to create a comprehensive recipe-based data source for each
 user. Predict a user's rating on a new recipe $r_{ij}$ by finding the
 average rating across all the ingredients, flavors, and cooking
 techniques in the new recipe:
-$$r_{ij} = \frac{\sum_{l\in rec_j} rat(u_i, ingr_l)}{l}$$\
+
+$$r_{ij} = \frac{\sum_{l\in rec_j} rat(u_i, ingr_l)}{l}$$
+
 **Hybrid**
 
-I plan to try two approaches here.
+**Content-augmented CF using cosine similarity**: attempts to generate
+as many ratings as possible for a user on ingredients, flavors, and
+techniques using ratings given by similar users, and then uses an
+average of the ratings of the content of a recipe to predict a new
+user-recipe rating.\
+To be more specific, this involved three steps:
 
-**Content-augmented CF using cosine similarity**: will be the same as
-the CF approach except instead of using ratings on recipes in Equation
-1, I will use ratings on ingredients, flavors, and techniques.
+**1.** I used Equation 1 to find the nearest neighbors of a new user (as
+in the CF approach).
+
+**2.** Then, I used the following equation to predict a new user's
+ratings on ingredients, flavors, and techniques that they hadn't already
+rated:
+
+$$rat(u_i, ingr_d) = \frac{\sum_k Sim(u_i, u_k)rat(u_k, ingr_d)}{\text{num ratings of }d}$$
+
+**3.** Then I used Equation 8 to predict a user's rating on a new recipe
+$r_{ij}$.
 
 **Content-augmented matrix factorization**: takes the matrix
-factorization approach to CF and augments the item data with content, as
-described below. Matrix factorization aims to decompose the user's
-preferences for into preferences for a set of latent factors. Matrix
-factorization can be performed using Singular Value Decomposition (SVD):
-$$M = U\Sigma V^T$$ By selecting the top $k$ singular values of matrix
-$\Sigma$, we can reconstruct matrix $M$ with less dimensions but still
-capturing much of the variability of the original matrix \[9\]. The idea
-here, when applied over flavor ratings, would be to find the dimensions
-of latent flavor preferences so as to avoid having to deal with the high
-dimensionality of flavor profiles. However, when factoring a sparse
-matrix, it's more efficient to use Non-negative Matrix Factorization
-(NMF), which involves solving the following optimization problem to find
-$U$ and $V$ such that the reconstructed user-item rating
-$\hat{r}_{ij}= u_i^Tv_j$ is as close as possible to the true ${r}_{ij}$:
+factorization approach to CF and augments the item data with content. I
+used NMF for this approach, like the basic matrix factorization
+approach. However, I incorporated recipe content information into this
+factorization by further factoring the matrix $Q$ (shape: num features
+by num recipes) as $X\Phi$, where $X$ is a matrix (shape: num recipes by
+num ingredients) in which $X_{id}$ is a binary indicator if ingredient
+$d$ is in recipe $i$. This results in the following NMF factorization of
+matrix $R$: $$R = P\Phi^TX^T$$ My source for this approach is Forbes et
+al. (2011). This updated NMF results in the following minimization of
+MSE: $$min_{\phi,p} \sum_{(u,i) \in TR} (r_{ui} - p_u\Phi^Tx_i^T)^2$$
 
-$$min_{q,p} \sum_{(i,j) \in TR} (r_{ij} - u_i^Tv_j)^2 + \lambda(|u_i|^2+|v_j|^2)$$
-where $u_i$ is the user vector, the $i$-th row of matrix $U$, and $v_j$
-is the item vector, the $j$-th row of matrix $V$, and $TR$ is the
-training set \[9\].
+Rather than implementing the updates to each matrix on each iteration of
+Gradient Descent by hand like I did for the basic matrix factorization,
+I decided to use Pytorch to calculate and update the matrices according
+to MSE loss. Once training is complete, a prediction for a new
+user-recipe pair is simply the $\hat r_{ui}$ entry in the reconstructed
+$\hat R = P\Phi^TX^T$ matrix.
 
-To reconstruct a rating prediction using this method and incorporating
-recipe content information (i.e. flavor profile), the item vector
-becomes: $$V = X\Phi$$ My source for this approach is Forbes et al.
-(2011). This changes Equation 6 slightly
-$$min_{q,p} \sum_{(i,j) \in TR} (r_{ij} - u_i^T\Phi^Tv_j)^2 + \lambda(|u_i|^2+|\Phi|^2)$$
-
-To solve this NMF, Alternative Least Squares is typically used \[9\].
-The gradient with respect to $u_i$ and the gradient with respect to
-$\Phi$ are computed and alternately applied to minimize the objective.
 
 # Evaluation and Final Results
 
-I plan to use the Root Mean Square Error (RMSE), Mean Absolute Error
+I trained each model above using the training set described previously,
+and then generated predictions using each user-recipe pair in the
+testing set. I used Root Mean Square Error (RMSE), Mean Absolute Error
 (MAE) and coverage (ability to generate predictions) \[6\] to evaluate
-the performance of the algorithms. These metrics will be applied by
-comparing the true ratings from the evaluation set to the predicted
-ones. For my final result, I will report the metrics for the baseline
-model, the vanilla CF model, the CB model, the hybrid CB-CF model, and
-the hybrid matrix factorization model. My aim is to analyze the
-performance of these approaches to evaluate whether the inclusion of
-flavor profile, ingredients, and cooking technique improve the quality
-of the recommender system.
+the performance of each approach.
+|  Model                                  |  RMSE  |   MAE   |    Coverage |
+|  ---------------------------------------| -------| --------| ----------|
+|  Baseline                               |  2.5185|   2.04112|   1.0|
+|  Vanilla CF                             |  0.9805|   0.5617|    1.0|
+|  Matrix factorization CF                |  1.7859|   1.4959|    0.6837|
+|  CB                                     |  1.3987|   1.0338|    0.3343|
+|  Content-augmented CF                   |  1.0787|   0.8480|    0.9995|
+|  Content-augmented matrix factorization |  4.1741|   3.8136|    1.1|
+
 
 # References
 
 1.  Trang Tran, T. N., Atas, M., Felfernig, A., & Stettinger, M. (2018).
     An overview of recommender systems in the healthy food domain.
-    *Journal of Intelligent Information Systems*, 50, 501-526.
+    *Journal of Intelligent Information Systems*, 50 (pp. 501-526).
 
 2.  Pecune, F., Callebert, L., & Marsella, S. (2020, September). A
     Recommender System for Healthy and Personalized Recipes
@@ -239,8 +275,8 @@ of the recommender system.
     meals. In *Proceedings of the 16th international conference on
     Intelligent user interfaces* (pp. 105-114).
 
-4.  Masthoff, J. Group recommender systems: Combining individual models.
-    *Recommender systems handbook*, Springer 677--702 (2011).
+4.  Masthoff, J. (2011). Group recommender systems: Combining individual
+    models. *Recommender systems handbook*, Springer (pp. 677--702).
 
 5.  Ajitsaria, A. Build a Recommendation Enging with Collaborate
     Filtering. *RealPython.com*
@@ -250,8 +286,8 @@ of the recommender system.
     15th international conference on Intelligent user interfaces* (pp.
     321-324).
 
-7.  Burke, R. Hybrid Recommender Systems: Survey and Experiments. *User
-    Model User-Adap Inter* 12, 331--370 (2002).
+7.  Burke, R. (2002). Hybrid Recommender Systems: Survey and
+    Experiments. *User Model User-Adap Inter* 12, (pp. 331--370).
 
 8.  Aberg, J. (2006, January). Dealing with Malnutrition: A Meal
     Planning System for Elderly. In *AAAI spring symposium:
@@ -265,3 +301,9 @@ of the recommender system.
     factorization for recommender systems: experiments with recipe
     recommendation. In *Proceedings of the fifth ACM conference on
     Recommender systems* (pp. 261-264).
+
+11. X. Luo, M. Zhou, Y. Xia and Q. Zhu. (May 2014). An Efficient
+    Non-Negative Matrix-Factorization-Based Approach to Collaborative
+    Filtering for Recommender Systems,\" in *IEEE Transactions on
+    Industrial Informatics,* vol. 10, no. 2 (pp. 1273-1284)
+
