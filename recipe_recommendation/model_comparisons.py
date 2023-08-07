@@ -3,8 +3,7 @@ import scipy.sparse as scsp
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 def calculate_metrics(results, true_total, model_name):
@@ -13,6 +12,7 @@ def calculate_metrics(results, true_total, model_name):
     coverage = len(results) / true_total
 
     print(f"{model_name} : RMSE: {RMSE} MAE: {MAE} Coverage: {coverage}")
+
 
 def plot_results(results, model_name):
     sns.color_palette("crest")
@@ -28,14 +28,34 @@ if __name__ == "__main__":
     true_total = len(interactions_test[['u', 'i']].drop_duplicates())
 
 
-    model1 = pd.read_csv("results/model_1.csv", index_col=0)
+    BL = pd.read_csv("results/bl_model.csv", index_col=0)
+    CF = pd.read_csv("results/CF.csv", index_col=0)
     CB = pd.read_csv("results/CB.csv", index_col=0)
     CA_CF = pd.read_csv("results/CA_CF.csv", index_col=0)
+    MF = pd.read_csv("results/MF.csv", index_col=0)
+    MF_hybrid = pd.read_csv("results/matrix_fact_hybrid.csv", index_col=0)
 
+
+    calculate_metrics(BL, true_total, "BL")
+    calculate_metrics(CF, true_total, "CF")
     calculate_metrics(CB, true_total, "CB")
     calculate_metrics(CA_CF, true_total, "Content-Augmented CF")
+    calculate_metrics(MF, true_total, "Matrix Factorization")
+    calculate_metrics(MF_hybrid, true_total, "Content-Augmented Matrix Factorization")
 
+    plot_results(BL, "BL")
+    plot_results(CF, "CF")
+    plot_results(CB, "CB")
     plot_results(CA_CF, "Content-Augmented CF")
+    plot_results(MF, "Matrix Factorization")
+    plot_results(MF_hybrid, "Content-Augmented Matrix Factorization")
+
+
+    r2_score(CF['rating'], CF['rating_pred'])
+    r2_score(CB['rating'], CB['rating_pred'])
+    r2_score(CA_CF['rating'], CA_CF['rating_pred'])
+    r2_score(MF['rating'], MF['rating_pred'])
+    r2_score(MF_hybrid['rating'], MF_hybrid['rating_pred'])
 
     model13 = model1.merge(model3, how='outer', on=['u', 'i', 'rating'])
 

@@ -23,7 +23,7 @@ testdata = Dataset.load_from_df(interactions_test[["u", "i", "rating"]], reader)
 testdata = testdata.build_full_trainset().build_testset()
 
 
-algo = NMF(n_factors=40, reg_pu=0.01, reg_qi=0.01, n_epochs=1)
+algo = NMF(n_factors=40, init_high=0.5, n_epochs=100)
 algo.fit(traindata)
 
 predictions = algo.test(testdata)
@@ -36,6 +36,10 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
+# 1.0737254026447878
+# 0.7213039396892266
+
+eval_df.to_csv("results/matrix_fact1.csv")
 
 algo = NMF(n_factors=40, biased=True, n_epochs=10)
 algo.fit(traindata)

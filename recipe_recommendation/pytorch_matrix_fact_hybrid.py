@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 import scipy.sparse as scsp
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import torch
@@ -55,8 +56,8 @@ X_train = scsp.csr_matrix((np.ones((len(recipe_ingredients_train))), (recipe_ing
 X_test = scsp.csr_matrix((np.ones((len(recipe_ingredients_test))), (recipe_ingredients_test['i'], recipe_ingredients_test['d'])))
 
 n_factors = 40
-num_epochs = 200
-lr = 1.5
+num_epochs = 500
+lr = 0.01
 
 class PytorchLinearModel(torch.nn.Module):
     def __init__(self, num_users, num_ingr, K, lr):
@@ -65,11 +66,11 @@ class PytorchLinearModel(torch.nn.Module):
         self.U = torch.nn.Parameter(torch.zeros((num_users, K)))
         self.PHI = torch.nn.Parameter(torch.zeros((num_ingr, K)))
         # Xavier initialization is a great way to intialize parameters
-        torch.nn.init.xavier_uniform_(self.U)
-        torch.nn.init.xavier_uniform_(self.PHI)
+        # torch.nn.init.xavier_uniform_(self.U)
+        # torch.nn.init.xavier_uniform_(self.PHI)
 
-        # torch.nn.init.uniform_(self.U, 0, 1)
-        # torch.nn.init.uniform_(self.PHI, 0, 1)
+        torch.nn.init.uniform_(self.U, 0, 0.5)
+        torch.nn.init.uniform_(self.PHI, 0, 0.5)
         # MSE using Pytorch
         self.MSE = torch.nn.MSELoss()
         # Optimizer for handling the gradient calculation and parameter updates
@@ -87,12 +88,12 @@ class PytorchLinearModel(torch.nn.Module):
         loss.backward()  # Calc gradient
         self.optimizer.step()  # Update parameters
         
-# Create Model -> U and V
 MF_model = PytorchLinearModel(num_users, num_ingr, n_factors, lr)
 
 R_tens = torch.FloatTensor(R.todense())
 X_tens = torch.FloatTensor(X.todense())
 # X_test_tens = torch.FloatTensor(X_test.todense())
+
 # Training
 losses = []
 for curr_epoch in range(num_epochs):
@@ -115,17 +116,22 @@ for (u, i) in zip(interactions_test['u'], interactions_test['i']):
     pred = (MF_model.U[u] @ MF_model.PHI.T).dot(X_tens[i]).item()
     eval_df.loc[eval_df['u']==u, 'rating_pred'] = pred
 
-global_mean = np.mean(interactions_train['rating'])
+# global_mean = np.mean(interactions_train['rating'])
+# eval_df['rating_pred'] += global_mean
 
-eval_df['rating_pred'] += global_mean
+eval_df['rating_pred'] = np.abs(eval_df['rating_pred'])
 
 eval_df.loc[eval_df['rating_pred'] > 6, 'rating_pred'] = 6
 eval_df.loc[eval_df['rating_pred'] < 1, 'rating_pred'] = 1
 
-
+eval_df.to_csv("results/matrix_fact_hybrid.csv")
 
 print(np.sqrt(mean_squared_error(eval_df['rating'], eval_df['rating_pred'])))
 print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
 
+plt.plot(range(0,500,5), losses)
+plt.xlabel("Iteration")
+plt.ylabel("Mean Squared Error (MSE)")
+plt.title("MSE across SGD iterations")

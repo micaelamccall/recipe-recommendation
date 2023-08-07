@@ -16,7 +16,7 @@ num_recipes = np.max(interactions_train['i']) + 1
 R = scsp.csr_matrix((interactions_train['rating'], (interactions_train['u'], interactions_train['i'])))
 
 n_factors = 40
-num_epochs = 400
+num_epochs = 100
 lr = 1.8
 
 class PytorchLinearModel(torch.nn.Module):
@@ -29,8 +29,8 @@ class PytorchLinearModel(torch.nn.Module):
         # torch.nn.init.xavier_uniform_(self.U)
         # torch.nn.init.xavier_uniform_(self.V)
 
-        torch.nn.init.uniform_(self.U, 0, 1)
-        torch.nn.init.uniform_(self.V, 0, 1)
+        torch.nn.init.uniform_(self.U, 0, 0.5)
+        torch.nn.init.uniform_(self.V, 0, 0.5)
         # MSE using Pytorch
         self.MSE = torch.nn.MSELoss()
         # Optimizer for handling the gradient calculation and parameter updates

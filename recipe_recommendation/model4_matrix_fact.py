@@ -4,7 +4,7 @@ import seaborn as sns
 from surprise import Dataset, Reader
 import pandas as pd
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
+import matplotlib.pyplot as plt
 
 
 class NMF():
@@ -148,3 +148,9 @@ print(mean_absolute_error(eval_df['rating'], eval_df['rating_pred']))
 eval_df.to_csv("results/MF.csv")
 
 sns.scatterplot(data=eval_df, x='rating', y='rating_pred')
+
+
+plt.plot(range(0,100,2), algo.losses[::2])
+plt.xlabel("Iteration")
+plt.ylabel("Mean Squared Error (MSE)")
+plt.title("MSE across SGD iterations")
