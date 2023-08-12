@@ -2,11 +2,8 @@ import pandas as pd
 import scipy.sparse as scsp
 import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-# from model_comparisons import calculate_metrics, plot_results
-
 
 interactions_train = pd.read_csv("data/interactions_train_mm.csv")
 

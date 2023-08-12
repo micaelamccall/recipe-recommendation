@@ -9,16 +9,16 @@ import matplotlib.pyplot as plt
 
 class NMF():
     
-    def __init__(self, n_factors=15, n_epochs=50, biased=False, reg_pu=.06,
-                 reg_qi=.06, lr=.005, random_state=None):
-
+    def __init__(self, n_factors=15, n_epochs=50, reg_pu=.06,
+                 reg_qi=.06, random_state=None):
+    '''
+    A class to perform NMF. Fitting the model involves perfoming SGD on the Q and P matrices defined above in the notes
+    x    
+    '''
         self.n_factors = n_factors
         self.n_epochs = n_epochs
-        self.biased = biased
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
-        self.lr_bu = lr
-        self.lr_bu = lr
         self.random_state = random_state
 
 
@@ -44,9 +44,6 @@ class NMF():
         user_denom = np.zeros((trainset.n_users, n_factors))
         item_num = np.zeros((trainset.n_items, n_factors))
         item_denom = np.zeros((trainset.n_items, n_factors))
-
-        if not self.biased:
-            global_mean = 0
 
         self.losses = []
 
