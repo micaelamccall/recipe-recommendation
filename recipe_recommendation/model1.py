@@ -9,14 +9,11 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 interactions_train = pd.read_csv("data/interactions_train_mm.csv", index_col=0)
 interactions_test = pd.read_csv("data/interactions_test_mm.csv", index_col=0)
 
+# add 1 to each rating so that all nonzero elements of the sparse matrix represent a rating
 interactions_train['rating'] += 1
 interactions_test['rating'] += 1
 
-num_users = np.max(interactions_train['u']) + 1
-num_recipes = np.max(interactions_train['i']) + 1
 # create user-recipe matrix
-# add 1 to each rating so that all nonzero elements of the sparse matrix represent a rating
-
 M = scsp.csr_matrix((interactions_train['rating'], (interactions_train['u'], interactions_train['i'])))
 
 # Calculate user level rating average
@@ -34,8 +31,6 @@ eval_df = interactions_test[['u', 'i', 'rating']]
 eval_df.loc[:, 'rating_pred'] = np.nan
 
 for u in interactions_test['u'].unique():
-    # if u < 50:
-    #     print(u)
         # get similarities for that user and delete their similarity with themself
         simt = sim[u,:]
         simt = np.delete(simt, u)
@@ -46,7 +41,6 @@ for u in interactions_test['u'].unique():
         # calculate weighted score for each recipe (score times similarity)
         score = scsp.csc_matrix(similar_user_ratings.multiply(simt[most_similar_users].reshape(-1,1)) )
         # calculate average score for each recipe
-
         col_totals = score.sum(axis=0)
         col_counts = np.diff(score.indptr).astype(float)
         col_counts[np.where(col_counts == 0)] = np.NAN

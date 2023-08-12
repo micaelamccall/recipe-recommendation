@@ -56,31 +56,3 @@ if __name__ == "__main__":
     r2_score(CA_CF['rating'], CA_CF['rating_pred'])
     r2_score(MF['rating'], MF['rating_pred'])
     r2_score(MF_hybrid['rating'], MF_hybrid['rating_pred'])
-
-    model13 = model1.merge(model3, how='outer', on=['u', 'i', 'rating'])
-
-    model13['mean_pred_rating'] = model13[['rating_pred_x', 'rating_pred_y']].mean(axis=1)
-
-    print(np.sqrt(mean_squared_error(model13['rating'], model13['mean_pred_rating'])))
-    print(mean_absolute_error(model13['rating'], model13['mean_pred_rating']))
-
-    sns.scatterplot(data=model13, x='rating', y='mean_pred_rating')
-
-
-    model12 = model1.merge(model2, how='outer', on=['u', 'i', 'rating'])
-
-    model12['mean_pred_rating'] = model12[['rating_pred_x', 'rating_pred_y']].mean(axis=1)
-
-    print(np.sqrt(mean_squared_error(model12['rating'], model12['mean_pred_rating'])))
-    print(mean_absolute_error(model12['rating'], model12['mean_pred_rating']))
-
-    sns.scatterplot(data=model12, x='rating', y='mean_pred_rating')
-
-
-    comp = model1.merge(model3, how='outer', on=['u', 'i', 'rating'])
-    comp = comp.melt(id_vars=['u', 'i', 'rating'])
-
-    sns.boxplot(data=comp, x='rating', y='value', hue='variable')
-
-    plt.legend()
-    plt.show()
