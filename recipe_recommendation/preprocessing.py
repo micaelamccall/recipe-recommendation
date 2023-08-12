@@ -272,6 +272,8 @@ interactions_test_w_deets.to_csv("data/interactions_test_w_deets.csv")
 interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv", index_col=0)
 interactions_test_w_deets[interactions_test_w_deets['i'] == 120]
 
+## Network of flavor to ingredient viz
+
 import networkx as nx
 
 G = nx.from_pandas_edgelist(interactions_test_w_deets[interactions_test_w_deets['i'] == 120][:150], 'i', 'deets')
@@ -282,12 +284,13 @@ v = interactions_test_w_deets.groupby(["i"]).count()
 
 pp_ingr['ingredients'][0]
 
-
+## Flavor viz
 def literal_return(val):
     try:
         return literal_eval(val)
     except (ValueError, SyntaxError) as e:
         return val
+    
 pp_ingr['flavors'] = pp_ingr['flavors'].apply(literal_return)
 
 flav_explode = pp_ingr.explode('flavors')
@@ -301,7 +304,6 @@ sns.set_color_codes("pastel")
 sns.barplot(x="mentions", y="flavors", data=flav_explode.sort_values(by='mentions').sample(50),
             label="Total mentions")
 plt.yticks(fontsize=8)
-# Plot the crashes where alcohol was involved
 sns.set_color_codes("muted")
 
 
