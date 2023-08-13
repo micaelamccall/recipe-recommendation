@@ -1,12 +1,7 @@
 import json
 import pandas as pd
-import scipy.sparse as scsp
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 from ast import literal_eval
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-
+from model_comparisons import calculate_metrics, plot_results
 
 interactions_train_w_deets = pd.read_csv("data/interactions_train_w_deets.csv")[['u', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
 interactions_test_w_deets = pd.read_csv("data/interactions_test_w_deets.csv")[['u', 'i', 'deets', 'rating']].drop_duplicates().reset_index(drop=True)
@@ -25,11 +20,10 @@ pred_df.columns = ['u', 'i', 'rating_pred']
 eval_df = interactions_test_w_deets[['u', 'i', 'rating']].merge(pred_df, how='inner', on=['i', 'u'])
 eval_df = eval_df.drop_duplicates()
 
-from model_comparisons import calculate_metrics, plot_results
-
 true_total = len(interactions_test_w_deets[['u', 'i']].drop_duplicates())
 
 calculate_metrics(eval_df, true_total, "CB")
+plot_results(eval_df, "CB")
 
 eval_df.to_csv("results/CB.csv")
 # RMSE: 1.398715133501436 

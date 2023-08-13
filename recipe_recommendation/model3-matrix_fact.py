@@ -8,13 +8,17 @@ import matplotlib.pyplot as plt
 
 
 class NMF():
-    
+    # Matrix Factorization of a sparse matrix using NMF. 
+    # Fitt by perfoming SGD on the Q and P matrices defined above in the notes.
+    # Loss function is MSE between the actual matrix and the product of Q and P.
+    # Predict by multiplying the resulting the corresponding entries of the Q and P matrices together. 
     def __init__(self, n_factors=15, n_epochs=50, reg_pu=.06,
                  reg_qi=.06, random_state=None):
-    '''
-    A class to perform NMF. Fitting the model involves perfoming SGD on the Q and P matrices defined above in the notes
-    x    
-    '''
+    # params:
+    # n_factors: the number of latent factors to decompose matrix into (the number of rows in in P and the number of columns in Q)
+    # n_epochs: the number of iterations of SGD
+    # reg_pu and reg_qi: the regularization terms to apply to the SGD updates
+    # random_state: optional
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.reg_pu = reg_pu
@@ -23,7 +27,7 @@ class NMF():
 
 
     def fit(self, trainset):
-
+        # trainset: n x m matrix of ratings
         self.trainset = trainset
         self.sgd(trainset)
         return self
@@ -37,7 +41,6 @@ class NMF():
         n_factors = self.n_factors
         reg_pu = self.reg_pu
         reg_qi = self.reg_qi
-        global_mean = self.trainset.global_mean
 
         # auxiliary matrices used in optimization process
         user_num = np.zeros((trainset.n_users, n_factors))
@@ -65,7 +68,7 @@ class NMF():
                 dot = 0  # <q_i, p_u>
                 for f in range(n_factors):
                     dot += qi[i, f] * pu[u, f]
-                est = global_mean + dot
+                est = dot
                 err = r - est
                 epoch_loss += err**2
                 l += 1
